@@ -1,0 +1,33 @@
+data set preparation 
+* estimnate the points 
+* tip direction of the foot and hands 
+* angle in elbows , wrist , knees , ankles
+
+/////////////////////////////////////////////
+
+ALGORITHMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+
+# Define the coordinates of the points
+shoulder = (x1, y1, z1)  # Shoulder point (S)
+elbow = (x2, y2, z2)     # Elbow point (E)
+hand = (x3, y3, z3)      # Hand point (H)
+
+# Calculate the vectors
+SE = (elbow[0] - shoulder[0], 
+      elbow[1] - shoulder[1], 
+      elbow[2] - shoulder[2])  # Vector SE
+
+EH = (hand[0] - elbow[0], 
+      hand[1] - elbow[1], 
+      hand[2] - elbow[2])      # Vector EH
+
+# Print the vectors
+print("Vector SE (Shoulder to Elbow):", SE)
+print("Vector EH (Elbow to Hand):", EH)
+///////////////////////////////////////////////////////////////
+
+
+
+
+* model to train with points and test it
+* collect points from the images and then make it  

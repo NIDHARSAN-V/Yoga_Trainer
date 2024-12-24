@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pose Estimation</title>
+</head>
+<body>
+    <h1>Pose Estimation with Flask</h1>
+    
+    <form id="image-form" method="POST" enctype="multipart/form-data">
+        <label for="image">Upload Image:</label>
+        <input type="file" id="image" name="image" accept="image/*" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        const form = document.getElementById("image-form");
+        const resultDiv = document.getElementById("result");
+    
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+    
+            const file = document.getElementById("image").files[0];
+            const reader = new FileReader();
+    
+            reader.onloadend = async function() {
+                // Extract base64 image data
+                const base64Image = reader.result;
+    
+                const formData = new FormData();
+                formData.append("image", base64Image); // Append base64 image directly
+    
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+    
+                const data = await response.json();
+    
+                if (data.label) {
+                    resultDiv.innerHTML = `<h3>Predicted Label: ${data.label}</h3>`;
+                } else {
+                    resultDiv.innerHTML = `<h3>Error: ${data.error}</h3>`;
+                }
+            };
+    
+            reader.readAsDataURL(file); // Convert file to base64
+        });
+    </script>
+    
+</body>
+</html>
