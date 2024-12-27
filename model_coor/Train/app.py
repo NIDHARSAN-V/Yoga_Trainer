@@ -4,7 +4,6 @@ import cv2
 import numpy as np
 import joblib
 import math
-import io
 from flask import Flask, render_template, request, jsonify
 import mediapipe as mp
 
@@ -68,6 +67,16 @@ def calculate_angle(a, b, c):
     angle = math.acos(dot_product / (magnitude_ba * magnitude_bc))
     return math.degrees(angle)
 
+# Function to validate presence of all required landmarks
+def validate_landmarks(landmarks, required_landmarks):
+    """
+    Check if all required landmarks are present in the detected landmarks.
+    :param landmarks: List of detected pose landmarks
+    :param required_landmarks: List of PoseLandmark enums that must be present
+    :return: Boolean indicating whether all required landmarks are present
+    """
+    return all(landmarks[landmark].visibility > 0.5 for landmark in required_landmarks)
+
 # Initialize MediaPipe Pose
 mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
@@ -75,6 +84,7 @@ mp_drawing = mp.solutions.drawing_utils
 @app.route('/')
 def index():
     return render_template('index.html')
+
 @app.route('/predict', methods=['POST'])
 def predict_pose():
     # Get the base64 image from the form
@@ -104,6 +114,26 @@ def predict_pose():
 
         if results.pose_landmarks:
             landmarks = results.pose_landmarks.landmark
+
+            # Define required landmarks
+            required_landmarks = [
+                mp_pose.PoseLandmark.LEFT_SHOULDER,
+                mp_pose.PoseLandmark.LEFT_ELBOW,
+                mp_pose.PoseLandmark.LEFT_WRIST,
+                mp_pose.PoseLandmark.LEFT_HIP,
+                mp_pose.PoseLandmark.LEFT_KNEE,
+                mp_pose.PoseLandmark.LEFT_ANKLE,
+                mp_pose.PoseLandmark.RIGHT_SHOULDER,
+                mp_pose.PoseLandmark.RIGHT_ELBOW,
+                mp_pose.PoseLandmark.RIGHT_WRIST,
+                mp_pose.PoseLandmark.RIGHT_HIP,
+                mp_pose.PoseLandmark.RIGHT_KNEE,
+                mp_pose.PoseLandmark.RIGHT_ANKLE,
+            ]
+
+            # Validate landmarks
+            if not validate_landmarks(landmarks, required_landmarks):
+                return jsonify({'error': 'Full body is not visible in the image. Please provide an image where the full body is clearly visible.'})
 
             # Calculate angles
             left_elbow_angle = calculate_angle(

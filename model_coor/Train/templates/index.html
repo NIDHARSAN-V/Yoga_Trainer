@@ -1,9 +1,28 @@
-{% comment %} <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pose Estimation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        #result h3 {
+            color: #007BFF;
+        }
+        #result h3.error {
+            color: red;
+        }
+    </style>
 </head>
 <body>
     <h1>Pose Estimation with Flask</h1>
@@ -19,140 +38,51 @@
     <script>
         const form = document.getElementById("image-form");
         const resultDiv = document.getElementById("result");
-    
+
         form.addEventListener("submit", async (e) => {
             e.preventDefault();
-    
+
             const file = document.getElementById("image").files[0];
+
+            if (!file) {
+                resultDiv.innerHTML = `<h3 class="error">Please select an image to upload.</h3>`;
+                return;
+            }
+
             const reader = new FileReader();
-    
-            reader.onloadend = async function() {
+
+            reader.onloadend = async function () {
                 // Extract base64 image data
                 const base64Image = reader.result;
-    
-                const formData = new FormData();
-                formData.append("image", base64Image); // Append base64 image directly
-    
-                const response = await fetch('/predict', {
-                    method: 'POST',
-                    body: formData
-                });
-    
-                const data = await response.json();
-    
-                if (data.label) {
-                    resultDiv.innerHTML = `<h3>Predicted Label: ${data.label}</h3>`;
-                } else {
-                    resultDiv.innerHTML = `<h3>Error: ${data.error}</h3>`;
+
+                try {
+                    const formData = new FormData();
+                    formData.append("image", base64Image); // Append base64 image directly
+
+                    const response = await fetch('/predict', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    const data = await response.json();
+
+                    if (data.label) {
+                        resultDiv.innerHTML = `<h3>Predicted Label: ${data.label}</h3>`;
+                    } else if (data.error) {
+                        resultDiv.innerHTML = `<h3 class="error">Error: ${data.error}</h3>`;
+                    } else {
+                        resultDiv.innerHTML = `<h3 class="error">Unexpected response from the server.</h3>`;
+                    }
+                } catch (error) {
+                    resultDiv.innerHTML = `<h3 class="error">Error: Unable to connect to the server.</h3>`;
                 }
             };
-    
-            reader.readAsDataURL(file); // Convert file to base64
-        });
-    </script>
-    
-</body>
-</html> {% endcomment %}
 
-
-
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pose Prediction</title>
-    <script src="https://cdn.socket.io/4.4.1/socket.io.min.js"></script>
-    <style>
-        #video-container {
-            position: relative;
-            width: 80%;
-            margin: 0 auto;
-        }
-        #video {
-            width: 100%;
-            height: auto;
-        }
-        #predicted-frame {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: auto;
-            display: none;
-        }
-        #error {
-            color: red;
-            text-align: center;
-            font-size: 20px;
-            display: none;
-        }
-    </style>
-</head>
-<body>
-    <h1 style="text-align: center;">Pose Prediction</h1>
-    <div id="video-container">
-        <video id="video" autoplay></video>
-        <img id="predicted-frame" src="" alt="Processed Frame">
-        <div id="error"></div>
-    </div>
-    <script>
-        const socket = io.connect('http://' + document.domain + ':' + location.port);
-        const videoElement = document.getElementById('video');
-        const predictedFrame = document.getElementById('predicted-frame');
-        const errorDiv = document.getElementById('error');
-
-        // Start video capture
-        navigator.mediaDevices.getUserMedia({ video: true })
-            .then((stream) => {
-                videoElement.srcObject = stream;
-                startSendingFrames(stream);
-            })
-            .catch((error) => {
-                console.error("Error accessing camera:", error);
-                errorDiv.textContent = 'Error accessing camera';
-                errorDiv.style.display = 'block';
-            });
-
-        // Function to capture and send frames
-        function startSendingFrames(stream) {
-            const canvas = document.createElement('canvas');
-            const ctx = canvas.getContext('2d');
-
-            setInterval(() => {
-                // Draw current video frame onto the canvas
-                ctx.drawImage(videoElement, 0, 0, canvas.width, canvas.height);
-
-                // Convert canvas to base64 image
-                const base64Image = canvas.toDataURL('image/jpeg');
-
-                // Send image to server
-                socket.emit('image', base64Image);
-            }, 100); // Send frame every 100ms (10 frames per second)
-        }
-
-        // Handle prediction results
-        socket.on('prediction', (data) => {
-            const { label, frame } = data;
-            const img = new Image();
-            img.src = 'data:image/jpeg;base64,' + frame;
-            img.onload = () => {
-                // Display the processed frame
-                predictedFrame.src = img.src;
-                predictedFrame.style.display = 'block';
-
-                // Log the pose prediction label
-                console.log('Predicted Pose:', label);
+            reader.onerror = function () {
+                resultDiv.innerHTML = `<h3 class="error">Error reading the file. Please try again.</h3>`;
             };
-        });
 
-        // Handle errors
-        socket.on('error', (data) => {
-            const { error } = data;
-            console.error('Error:', error);
-            errorDiv.textContent = error;
-            errorDiv.style.display = 'block';
+            reader.readAsDataURL(file); // Convert file to base64
         });
     </script>
 </body>
